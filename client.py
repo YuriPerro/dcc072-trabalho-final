@@ -21,7 +21,7 @@ def create_dtls_client(server_host='127.0.0.1', server_port=5555, message_count=
     try:
         # Cria um socket UDP
         sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        sock.settimeout(5.0)  # Timeout mais longo para o handshake
+        sock.settimeout(10.0)  # Timeout mais longo para o handshake através do MITM
         logger.info(f"Iniciando conexão DTLS com o servidor {server_addr}")
         
         # Cria um contexto DTLS
@@ -47,7 +47,7 @@ def create_dtls_client(server_host='127.0.0.1', server_port=5555, message_count=
         # Realiza o handshake
         handshake_complete = False
         handshake_attempts = 0
-        max_attempts = 10
+        max_attempts = 15  # Aumenta o número de tentativas para o MITM
         
         while not handshake_complete and handshake_attempts < max_attempts:
             try:
@@ -87,7 +87,7 @@ def create_dtls_client(server_host='127.0.0.1', server_port=5555, message_count=
             return
         
         # Ajusta timeout para operações normais
-        sock.settimeout(2.0)
+        sock.settimeout(5.0)  # Aumenta o timeout para operações através do MITM
         
         # Envia mensagens
         for i in range(message_count):
@@ -123,20 +123,18 @@ def create_dtls_client(server_host='127.0.0.1', server_port=5555, message_count=
         
         # Encerra a conexão
         try:
+            # Envia mensagem de encerramento
+            logger.info("Enviando mensagem de encerramento")
             conn.send(b"FIM")
             outgoing = conn.bio_read(4096)
             if outgoing:
                 sock.sendto(outgoing, server_addr)
                 logger.info("Mensagem de encerramento enviada")
             
-            # Encerra a conexão graciosamente
-            try:
-                conn.shutdown()
-                outgoing = conn.bio_read(4096)
-                if outgoing:
-                    sock.sendto(outgoing, server_addr)
-            except:
-                pass
+            # Pequena pausa para garantir que a mensagem seja processada
+            time.sleep(0.5)
+            
+            # Não esperamos por resposta a mensagem FIM
         except Exception as e:
             logger.warning(f"Erro ao encerrar conexão: {e}")
     
