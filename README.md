@@ -1,76 +1,106 @@
-# Implementação de Comunicação Segura com DTLS
+# DTLS Secure Communication Demo
 
-Este projeto implementa um sistema de comunicação cliente-servidor utilizando o protocolo Datagram Transport Layer Security (DTLS) sobre o User Datagram Protocol (UDP). A implementação garante a segurança da comunicação através do DTLS, proporcionando confidencialidade, integridade e autenticação.
-
-## Estrutura do Projeto
-
-- `server.py`: Servidor DTLS que recebe e responde mensagens de forma segura
-- `client.py`: Cliente DTLS que envia mensagens seguras para o servidor
-- `certs/`: Diretório contendo certificados e chaves para autenticação
-- `setup.sh`: Script para gerar os certificados necessários
+Este projeto implementa uma comunicação segura utilizando o protocolo DTLS (Datagram Transport Layer Security) sobre UDP, com recursos para demonstração de ataques Man-in-the-Middle (MITM) e mecanismos de proteção.
 
 ## Requisitos
 
 - Python 3.6+
-- PyOpenSSL
-- cryptography
+- OpenSSL
+- Wireshark (opcional, para análise de pacotes)
 
-Para instalar as dependências:
+## Instalação
 
+1. Clone o repositório:
+```bash
+git clone https://github.com/YuriPerro/dcc072-trabalho-final.git
+cd dcc072-trabalho-final
+```
+
+2. Instale as dependências:
 ```bash
 pip install -r requirements.txt
 ```
 
-## Executando o Projeto
-
-### 1. Gerar Certificados
-
-Execute o script de configuração para gerar os certificados necessários:
-
+3. Gere os certificados necessários:
 ```bash
 ./setup.sh
 ```
 
-### 2. Iniciar o Servidor
+## Estrutura do Projeto
+
+- `server.py` - Servidor DTLS que recebe mensagens seguras
+- `client.py` - Cliente DTLS que envia mensagens ao servidor
+- `mitm_attack.py` - Ferramenta para demonstrar ataques Man-in-the-Middle
+- `certs/` - Diretório para armazenamento de certificados
+- `requirements.txt` - Dependências do projeto
+
+## Como Usar
+
+### Executando o Servidor
 
 ```bash
 python server.py
 ```
 
-O servidor será iniciado na porta 5555 e aguardará conexões de clientes.
+Por padrão, o servidor escuta na porta 5555.
 
-### 3. Iniciar o Cliente
-
-Em outro terminal:
+### Executando o Cliente
 
 ```bash
-python client.py [--host IP] [--port PORTA] [--count QUANTIDADE] [--delay SEGUNDOS]
+python client.py --count 5
 ```
 
-Parâmetros opcionais:
-- `--host`: Endereço IP do servidor (padrão: 127.0.0.1)
-- `--port`: Porta do servidor (padrão: 5555)
-- `--count`: Número de mensagens a enviar (padrão: 10)
-- `--delay`: Tempo de espera entre mensagens em segundos (padrão: 1.0)
+Opções:
+- `--count <número>`: Número de mensagens a enviar (padrão: 5)
+- `--host <endereço>`: Endereço do servidor (padrão: 127.0.0.1)
+- `--port <porta>`: Porta do servidor (padrão: 5555)
 
-## Detalhes da Implementação
+### Demonstrando Ataques Man-in-the-Middle (MITM)
 
-O projeto implementa o protocolo DTLS que fornece as seguintes garantias de segurança:
+O ataque MITM intercepta a comunicação entre cliente e servidor, permitindo visualizar, modificar ou descartar pacotes.
 
-1. **Confidencialidade**: As mensagens são criptografadas usando o protocolo DTLS, impedindo que terceiros possam ler seu conteúdo.
-2. **Integridade**: A integridade das mensagens é garantida, assegurando que o conteúdo não foi alterado durante a transmissão.
-3. **Autenticação**: O servidor se autentica usando certificados X.509, garantindo sua identidade.
-4. **Handshake seguro**: Um processo seguro de handshake é realizado para estabelecer os parâmetros da conexão.
+#### Executando o Ataque MITM
 
-## Fluxo de Comunicação
+```bash
+python mitm_attack.py
+```
 
-1. O cliente inicia uma conexão DTLS com o servidor
-2. O servidor e o cliente realizam o handshake DTLS
-3. As mensagens são trocadas de forma segura
-4. O cliente envia "FIM" para encerrar a conexão
+Por padrão, o MITM escuta na porta 5556 e encaminha o tráfego para o servidor na porta 5555.
 
-## Referências
+Opções:
+- `--server-host <endereço>`: Endereço do servidor real (padrão: 127.0.0.1)
+- `--server-port <porta>`: Porta do servidor real (padrão: 5555)
+- `--mitm-port <porta>`: Porta em que o MITM vai escutar (padrão: 5556)
+- `--mode <modo>`: Modo de ataque (padrão: passive)
+  - `passive`: Apenas observa o tráfego
+  - `modify`: Modifica pacotes aleatoriamente
+  - `drop`: Descarta pacotes aleatoriamente
+- `--probability <valor>`: Probabilidade de modificar/descartar pacotes (0.0 - 1.0, padrão: 0.5)
 
-- [RFC 6347 - Datagram Transport Layer Security Version 1.2](https://tools.ietf.org/html/rfc6347)
-- [OpenSSL Documentation](https://www.openssl.org/docs/)
-- [PyOpenSSL Documentation](https://www.pyopenssl.org/en/stable/)
+#### Testando o Ataque
+
+1. Inicie o servidor DTLS:
+```bash
+python server.py
+```
+
+2. Inicie o ataque MITM:
+```bash
+python mitm_attack.py --mode modify
+```
+
+3. Execute o cliente apontando para o MITM:
+```bash
+python client.py --port 5556
+```
+
+O MITM interceptará a comunicação entre cliente e servidor, permitindo observar, modificar ou descartar pacotes conforme o modo selecionado.
+
+## Tecnologias Utilizadas
+
+- **Python**: Linguagem de programação principal
+- **PyOpenSSL**: Implementação Python da biblioteca OpenSSL
+- **Socket**: Comunicação de rede
+- **Threading**: Processamento paralelo para o ataque MITM
+- **DTLS**: Protocolo de segurança para datagramas
+- **Logging**: Registros de eventos e mensagens do sistema
